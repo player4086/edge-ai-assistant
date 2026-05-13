@@ -69,9 +69,19 @@ function readPageContent(tab, mode) {
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
-          const clone = document.body.cloneNode(true);
-          clone.querySelectorAll('script,style,noscript,header,footer,nav,iframe,svg').forEach(e => e.remove());
-          return clone.innerText.replace(/\n{3,}/g, '\n\n').trim();
+          const root = document.querySelector('article, main, [role="main"], .content, .post, .article') || document.body;
+          const skip = new Set(['SCRIPT','STYLE','NOSCRIPT','IFRAME','SVG','IMG','VIDEO','AUDIO','BUTTON','INPUT','SELECT','HEADER','FOOTER','NAV']);
+          const parts = [];
+          const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: (n) => {
+              const p = n.parentElement;
+              if (!p || skip.has(p.tagName) || p.closest('script,style,noscript,header,footer,nav,iframe,svg,pre,code')) return NodeFilter.FILTER_REJECT;
+              const t = n.textContent.trim();
+              return t ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }
+          });
+          while (w.nextNode()) parts.push(w.currentNode.textContent.trim());
+          return parts.join('\n').replace(/\n{3,}/g, '\n\n').trim();
         }
       }, (results) => {
         if (results && results[0] && results[0].result) {

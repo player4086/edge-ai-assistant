@@ -249,16 +249,39 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 function extractPageContent() {
-  // Try to get main content first
-  const main = document.querySelector('article, main, [role="main"], .content, .post, .article');
-  const source = main || document.body.cloneNode(true);
-  // Remove non-content elements
-  const clone = source.cloneNode ? source.cloneNode(true) : source;
-  if (clone.querySelectorAll) {
-    clone.querySelectorAll('script,style,noscript,header,footer,nav,iframe,svg,img,video,audio,button,.sidebar,.nav,.menu,.ad').forEach(e => e.remove());
+  const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME', 'SVG', 'IMG', 'VIDEO', 'AUDIO', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'HEAD', 'META', 'LINK']);
+  const SKIP_CLASSES = ['sidebar', 'nav', 'menu', 'ad', 'comment', 'footer-bar'];
+
+  // Prefer main content area, fallback to body
+  const root = document.querySelector('article, main, [role="main"], .content, .post, .article') || document.body;
+
+  const parts = [];
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
+        const cls = (node.className || '').toLowerCase();
+        const id = (node.id || '').toLowerCase();
+        for (const c of SKIP_CLASSES) {
+          if (cls.includes(c) || id.includes(c)) return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_SKIP; // skip element but walk into children
+      }
+      // Text node
+      const parent = node.parentElement;
+      if (!parent || SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.closest('script,style,noscript,header,footer,nav,iframe,svg,pre,code')) return NodeFilter.FILTER_REJECT;
+      const text = node.textContent.trim();
+      return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+
+  while (walk.nextNode()) {
+    const text = walk.currentNode.textContent.trim();
+    if (text) parts.push(text);
   }
-  const text = (clone.innerText || clone.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
-  return text.substring(0, 16000);
+
+  return parts.join('\n').replace(/\n{3,}/g, '\n\n').trim().substring(0, 16000);
 }
 
 // --- Init ---

@@ -35,21 +35,29 @@ function fetchPageContent() {
       pageCache = null;
       return;
     }
-    chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
-      const indicator = document.getElementById('page-indicator');
-      if (resp && resp.content) {
-        pageCache = {
-          url: tab.url,
-          title: tab.title || '',
-          content: resp.content.substring(0, 16000),
-          time: Date.now()
-        };
-        if (indicator) { indicator.className = 'page-indicator'; indicator.title = `已读取: ${tab.title || tab.url}`; }
-      } else {
-        pageCache = null;
-        if (indicator) { indicator.className = 'page-indicator off'; indicator.title = '未读取到页面内容'; }
-      }
-    });
+    try {
+      chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
+        if (chrome.runtime.lastError) {
+          pageCache = null;
+          return;
+        }
+        const indicator = document.getElementById('page-indicator');
+        if (resp && resp.content && resp.content.length > 0) {
+          pageCache = {
+            url: tab.url,
+            title: tab.title || '',
+            content: resp.content.substring(0, 16000),
+            time: Date.now()
+          };
+          if (indicator) { indicator.className = 'page-indicator'; indicator.title = `已读取: ${tab.title || tab.url}`; }
+        } else {
+          pageCache = null;
+          if (indicator) { indicator.className = 'page-indicator off'; indicator.title = '未读取到页面内容'; }
+        }
+      });
+    } catch(e) {
+      pageCache = null;
+    }
   });
 }
 
@@ -180,16 +188,23 @@ initSelect(langSelect, () => {});
 // "读取页面" quick button
 document.getElementById('btn-readpage').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]) {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
-        if (resp && resp.content) {
-          setMode('readpage');
-          callAI(resp.content.substring(0, 16000), 'readpage');
-        } else {
-          appendMessage('assistant', '**无法读取当前页面内容。**\n\n请确保在普通网页上使用此功能（非系统页面或扩展页面）。');
-        }
-      });
+    const tab = tabs[0];
+    if (!tab || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
+      appendMessage('assistant', '**无法读取系统页面。**\n\n请在普通网页上使用此功能。');
+      return;
     }
+    chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
+      if (chrome.runtime.lastError) {
+        appendMessage('assistant', '**读取失败**：页面尚未加载扩展脚本。\n\n请刷新网页后重试。');
+        return;
+      }
+      if (resp && resp.content && resp.content.length > 0) {
+        setMode('readpage');
+        callAI(resp.content.substring(0, 16000), 'readpage');
+      } else {
+        appendMessage('assistant', '**无法读取页面内容。**\n\n可能是页面结构特殊导致提取失败，请尝试手动复制。');
+      }
+    });
   });
 });
 
@@ -555,7 +570,7 @@ async function callAI(userText, mode) {
 
   let systemPrompt = getSystemPrompt(mode);
   // Auto-inject page context when available
-  if (pageCache) {
+  if (pageCache && pageCache.content) {
     systemPrompt += `\n\n[当前网页上下文]\n标题: ${pageCache.title}\nURL: ${pageCache.url}\n内容:\n${pageCache.content}`;
   }
   let userContent, displayText;

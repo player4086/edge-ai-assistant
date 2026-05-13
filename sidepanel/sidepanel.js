@@ -25,6 +25,16 @@ let pendingAttachment = null;
 let currentTTS = null;
 
 // ============================================
+// Help Panel
+// ============================================
+document.getElementById('btn-help').addEventListener('click', () => {
+  const panel = document.getElementById('help-panel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  document.getElementById('btn-help').textContent = isOpen ? '?' : '×';
+});
+
+// ============================================
 // Theme
 // ============================================
 function applyTheme(theme) {

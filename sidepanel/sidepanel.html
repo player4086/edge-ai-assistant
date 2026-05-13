@@ -12,6 +12,7 @@
 <header class="sp-header">
   <h1>AI 网页助手</h1>
   <div class="sp-header-actions">
+    <button id="btn-help" title="使用说明">?</button>
     <button id="btn-theme" title="切换主题">主题</button>
     <button id="btn-export" title="导出对话">导出</button>
     <button id="btn-clear" title="清空对话">清空</button>
@@ -47,6 +48,39 @@
       <div class="custom-option" data-value="Deutsch">Deutsch</div>
       <div class="custom-option" data-value="Español">Español</div>
       <div class="custom-option" data-value="Русский">Русский</div>
+    </div>
+  </div>
+</div>
+
+<!-- Help Panel -->
+<div class="help-panel" id="help-panel" style="display:none;">
+  <div class="help-grid">
+    <div class="help-col">
+      <h4>快捷键</h4>
+      <table>
+        <tr><td><kbd>Alt</kbd>+<kbd>A</kbd></td><td>打开助手</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>E</kbd></td><td>解释选中代码</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>T</kbd></td><td>翻译选中文本</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>摘要当前页面</td></tr>
+      </table>
+    </div>
+    <div class="help-col">
+      <h4>网页操作</h4>
+      <table>
+        <tr><td>选中文本</td><td>→ 浮动按钮</td></tr>
+        <tr><td>右键选中文本</td><td>→ AI 菜单</td></tr>
+        <tr><td>点击高亮文本</td><td>→ 取消高亮</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>发送消息</td></tr>
+      </table>
+    </div>
+    <div class="help-col">
+      <h4>其他功能</h4>
+      <table>
+        <tr><td>文件</td><td>上传代码文件分析</td></tr>
+        <tr><td>图片</td><td>上传图片识别</td></tr>
+        <tr><td>导出</td><td>下载对话 Markdown</td></tr>
+        <tr><td>🔊</td><td>朗读 AI 回复</td></tr>
+      </table>
     </div>
   </div>
 </div>

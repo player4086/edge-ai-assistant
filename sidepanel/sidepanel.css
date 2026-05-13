@@ -194,6 +194,81 @@ body {
 }
 
 /* ============================================
+   Help Panel
+   ============================================ */
+#btn-help {
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-weight: 700;
+  font-size: 13px !important;
+  line-height: 20px;
+  text-align: center;
+}
+
+@keyframes helpIn {
+  from { opacity: 0; max-height: 0; transform: translateY(-4px); }
+  to   { opacity: 1; max-height: 180px; transform: translateY(0); }
+}
+
+.help-panel {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  overflow: hidden;
+  animation: helpIn 0.25s ease-out both;
+  flex-shrink: 0;
+}
+
+.help-grid {
+  display: flex;
+  gap: 16px;
+}
+
+.help-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.help-col h4 {
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.help-col table {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.help-col td {
+  padding: 2px 4px;
+  color: var(--text2);
+  vertical-align: top;
+}
+
+.help-col td:first-child {
+  color: var(--text);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.help-col kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--text);
+}
+
+/* ============================================
    Template Bar
    ============================================ */
 .template-bar {

@@ -645,7 +645,33 @@ async function callAI(userText, mode) {
     }
 
     const finalEl = chatMessages.querySelector('.msg.streaming');
-    if (finalEl) finalEl.classList.remove('streaming');
+    if (finalEl) {
+      finalEl.classList.remove('streaming');
+      // Inject action buttons after stream completes
+      if (fullContent) {
+        const actions = document.createElement('div');
+        actions.className = 'msg-actions';
+        actions.innerHTML = `
+          <button class="action-btn action-copy" data-action="copy" title="复制回复">复制</button>
+          <button class="action-btn action-regen" data-action="regen" title="重新回复">重新回复</button>
+          <button class="action-btn action-tts" data-action="tts" title="朗读">朗读</button>`;
+        actions.addEventListener('click', (e) => {
+          const btn = e.target.closest('.action-btn');
+          if (!btn) return;
+          if (btn.dataset.action === 'copy') {
+            navigator.clipboard.writeText(fullContent).then(() => {
+              btn.textContent = '已复制';
+              setTimeout(() => { btn.textContent = '复制'; }, 1500);
+            }).catch(() => {});
+          } else if (btn.dataset.action === 'regen') {
+            regenerate();
+          } else if (btn.dataset.action === 'tts') {
+            toggleTTS(btn, fullContent);
+          }
+        });
+        finalEl.insertBefore(actions, finalEl.firstChild);
+      }
+    }
 
     if (fullContent) {
       conversationHistory.push({ role: 'assistant', content: fullContent });

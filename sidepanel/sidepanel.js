@@ -136,6 +136,22 @@ initSelect(modeSelect, (value) => {
 });
 initSelect(langSelect, () => {});
 
+// "读取页面" quick button
+document.getElementById('btn-readpage').addEventListener('click', () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
+        if (resp && resp.content) {
+          setMode('readpage');
+          callAI(resp.content.substring(0, 16000), 'readpage');
+        } else {
+          appendMessage('assistant', '**无法读取当前页面内容。**\n\n请确保在普通网页上使用此功能（非系统页面或扩展页面）。');
+        }
+      });
+    }
+  });
+});
+
 // ============================================
 // Templates (quick bar)
 // ============================================
@@ -215,6 +231,9 @@ function getSystemPrompt(mode) {
   }
   if (mode === 'summarize') {
     return '你是专业内容摘要助手。将用户提供的网页内容精炼为3-5个要点，每个要点一两句话。突出关键信息和结论。用中文输出。';
+  }
+  if (mode === 'readpage') {
+    return '以下是一段网页正文内容。用户可能会针对这些内容提问。请仔细阅读并用中文回答用户的问题。如果用户没有具体问题，请用5-8个要点总结关键信息。';
   }
   return '你是AI助手，用中文回答。如果用户提供代码就解释它，如果是外文就翻译它，如果是网页内容就摘要它。';
 }
@@ -610,7 +629,7 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 // Messages from background/content
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'QUERY_AI' && msg.text) {
-    if (msg.mode && ['explain','translate','summarize'].includes(msg.mode)) setMode(msg.mode);
+    if (msg.mode && ['explain','translate','summarize','readpage'].includes(msg.mode)) setMode(msg.mode);
     if (msg.mode === 'translate') langSelect.style.display = 'block';
     callAI(msg.text, getMode());
     return true;

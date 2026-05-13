@@ -9,6 +9,7 @@ function ensureFloatBox() {
     <button id="ai-btn-explain" title="AI 解释代码">解释</button>
     <button id="ai-btn-translate" title="AI 翻译">翻译</button>
     <button id="ai-btn-summarize" title="AI 摘要页面">摘要</button>
+    <button id="ai-btn-readpage" title="读取页面内容">读取</button>
     <button id="ai-btn-highlight" title="高亮标记">高亮</button>
   `;
   document.body.appendChild(floatBox);
@@ -25,6 +26,10 @@ function ensureFloatBox() {
     e.preventDefault();
     sendQuery('summarize');
   });
+  floatBox.querySelector('#ai-btn-readpage').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    sendQuery('readpage');
+  });
   floatBox.querySelector('#ai-btn-highlight').addEventListener('mousedown', (e) => {
     e.preventDefault();
     doHighlight();
@@ -40,8 +45,8 @@ function ensureFloatBox() {
 
 function sendQuery(mode) {
   let text;
-  if (mode === 'summarize') {
-    text = extractPageContent().substring(0, 8000);
+  if (mode === 'summarize' || mode === 'readpage') {
+    text = extractPageContent().substring(0, 16000);
     if (!text) return;
   } else {
     text = window.getSelection().toString().trim();

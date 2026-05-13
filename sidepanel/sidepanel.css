@@ -330,6 +330,11 @@ body {
   border-color: var(--accent);
 }
 
+.template-readpage {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .template-btn:active { transform: scale(0.94); }
 
 /* ============================================

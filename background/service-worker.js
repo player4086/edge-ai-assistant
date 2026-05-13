@@ -15,11 +15,17 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'AI 摘要页面',
     contexts: ['page']
   });
+  chrome.contextMenus.create({
+    id: 'ai-readpage',
+    title: 'AI 读取页面内容',
+    contexts: ['page']
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'ai-summarize') {
-    summarizePage(tab);
+  if (info.menuItemId === 'ai-summarize' || info.menuItemId === 'ai-readpage') {
+    const mode = info.menuItemId === 'ai-summarize' ? 'summarize' : 'readpage';
+    readPageContent(tab, mode);
     return;
   }
   const mode = info.menuItemId === 'ai-explain' ? 'explain' : 'translate';
@@ -52,14 +58,14 @@ function relayToPanel(tab, text, mode) {
   });
 }
 
-// --- Page Summarize ---
-function summarizePage(tab) {
+// --- Read Page Content ---
+function readPageContent(tab, mode) {
+  mode = mode || 'summarize';
+  const maxLen = mode === 'readpage' ? 16000 : 8000;
   chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
     if (resp && resp.content) {
-      const text = resp.content.substring(0, 8000);
-      relayToPanel(tab, text, 'summarize');
+      relayToPanel(tab, resp.content.substring(0, maxLen), mode);
     } else {
-      // Fallback: inject extractor and retry once
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
@@ -69,13 +75,15 @@ function summarizePage(tab) {
         }
       }, (results) => {
         if (results && results[0] && results[0].result) {
-          const text = results[0].result.substring(0, 8000);
-          relayToPanel(tab, text, 'summarize');
+          relayToPanel(tab, results[0].result.substring(0, maxLen), mode);
         }
       });
     }
   });
 }
+
+// Backward-compat
+function summarizePage(tab) { readPageContent(tab, 'summarize'); }
 
 // --- Relay messages ---
 chrome.runtime.onMessage.addListener((msg, sender) => {

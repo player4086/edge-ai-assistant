@@ -32,6 +32,7 @@
       <div class="custom-option" data-value="explain">解释代码</div>
       <div class="custom-option" data-value="translate">翻译</div>
       <div class="custom-option" data-value="summarize">摘要</div>
+      <div class="custom-option" data-value="readpage">读取页面</div>
     </div>
   </div>
   <div class="custom-select" id="lang-select" style="display:none;">
@@ -76,6 +77,7 @@
     <div class="help-col">
       <h4>其他功能</h4>
       <table>
+        <tr><td>读取页面</td><td>加载当前网页内容</td></tr>
         <tr><td>文件</td><td>上传代码文件分析</td></tr>
         <tr><td>图片</td><td>上传图片识别</td></tr>
         <tr><td>导出</td><td>下载对话 Markdown</td></tr>
@@ -88,6 +90,7 @@
 <!-- Prompt Templates -->
 <div class="template-bar" id="template-bar">
   <span class="template-label">快捷:</span>
+  <button class="template-btn template-readpage" id="btn-readpage">读取页面</button>
   <button class="template-btn" data-prompt="请审查以下代码，找出潜在的 Bug、安全问题及性能瓶颈：">代码审查</button>
   <button class="template-btn" data-prompt="请为以下代码添加详细注释：">写注释</button>
   <button class="template-btn" data-prompt="请找出以下代码中的错误并给出修复方案：">找Bug</button>

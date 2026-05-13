@@ -103,7 +103,7 @@ function readPageContent(tab, mode) {
 function summarizePage(tab) { readPageContent(tab, 'summarize'); }
 
 // --- Relay messages ---
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'QUERY_AI' && sender.tab) {
     chrome.sidePanel.open({ tabId: sender.tab.id }).then(() => {
       setTimeout(() => {
@@ -119,8 +119,9 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'GET_SELECTED_TEXT') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_SELECTED_TEXT' }, () => {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_SELECTED_TEXT' }, (resp) => {
           if (chrome.runtime.lastError) return;
+          sendResponse(resp || { text: '' });
         });
       }
     });

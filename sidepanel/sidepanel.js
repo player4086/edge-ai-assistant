@@ -622,8 +622,13 @@ async function callAI(userText, mode) {
             fullContent += p.delta.text;
             if (firstChunk) { setLoading(false); appendMessage('assistant', fullContent, true); firstChunk = false; }
             else { appendMessage('assistant', fullContent, true); }
+          } else if (p.type === 'error' && p.error?.message) {
+            throw new Error(`API 流错误: ${p.error.message}`);
           }
-        } catch(e) {}
+        } catch(e) {
+          // Skip unparseable SSE lines or rethrow stream errors
+          if (e.message && e.message.startsWith('API 流错误')) throw e;
+        }
       }
     }
 
@@ -653,18 +658,18 @@ async function callAI(userText, mode) {
 // ============================================
 function regenerate() {
   if (isStreaming) return;
-  // Pop last assistant reply from history
-  while (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
+  // Only pop the LAST assistant message, not all of them
+  if (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
     conversationHistory.pop();
   }
   const lastUser = conversationHistory[conversationHistory.length - 1];
   if (!lastUser || lastUser.role !== 'user') return;
-  // Remove displayed AI message(s)
+  // Remove only the LAST displayed AI message
   const msgs = chatMessages.querySelectorAll('.msg.assistant:not(#loading-indicator .msg)');
   const lastMsg = msgs[msgs.length - 1];
   if (lastMsg) lastMsg.remove();
-  // Re-send
-  const text = typeof lastUser.content === 'string' ? lastUser.content : '[重新生成上次回复]';
+  // Re-send using the exact last user content
+  const text = typeof lastUser.content === 'string' ? lastUser.content : '[请重新回答]';
   callAI(text, getMode());
 }
 

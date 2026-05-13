@@ -342,15 +342,15 @@ function appendMessage(role, content, isPartial) {
     // Regenerate button
     const regenBtn = document.createElement('button');
     regenBtn.className = 'action-btn action-regen';
-    regenBtn.title = '重新回复';
-    regenBtn.textContent = '↻ 重新回复';
+    regenBtn.title = '用当前模式重新生成回复';
+    regenBtn.textContent = '重新回复';
     regenBtn.addEventListener('click', () => regenerate());
     actions.appendChild(regenBtn);
     // TTS button
     const ttsBtn = document.createElement('button');
     ttsBtn.className = 'action-btn action-tts';
-    ttsBtn.title = '朗读';
-    ttsBtn.textContent = '🔊 朗读';
+    ttsBtn.title = '朗读回复';
+    ttsBtn.textContent = '朗读';
     ttsBtn.addEventListener('click', () => toggleTTS(ttsBtn, content));
     actions.appendChild(ttsBtn);
     div.appendChild(actions);
@@ -369,18 +369,18 @@ function chatContainer() { return document.getElementById('chat-container'); }
 function toggleTTS(btn, text) {
   if (currentTTS) {
     window.speechSynthesis.cancel();
-    if (currentTTS.btn === btn) { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; return; }
+    if (currentTTS.btn === btn) { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '朗读'; return; }
   }
   const plain = text.replace(/```[\s\S]*?```/g, '').replace(/[#*`>\-\[\]()]/g, '').trim();
   if (!plain) return;
   const utterance = new SpeechSynthesisUtterance(plain);
   utterance.lang = 'zh-CN';
   utterance.rate = 1.0;
-  utterance.onend = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; };
-  utterance.onerror = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; };
+  utterance.onend = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '朗读'; };
+  utterance.onerror = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '朗读'; };
   currentTTS = { btn, utterance };
   btn.classList.add('playing');
-  btn.textContent = '⏹ 停止';
+  btn.textContent = '停止';
   window.speechSynthesis.speak(utterance);
 }
 

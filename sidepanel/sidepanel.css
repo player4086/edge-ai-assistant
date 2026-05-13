@@ -90,6 +90,24 @@ body {
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  font-size: 0;
+  line-height: 0;
+  transition: background 0.3s;
+}
+
+.page-indicator.off {
+  background: var(--text3);
 }
 
 .sp-header-actions {

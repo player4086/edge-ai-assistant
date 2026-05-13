@@ -23,6 +23,47 @@ let isStreaming = false;
 let conversationHistory = [];
 let pendingAttachment = null;
 let currentTTS = null;
+let pageCache = null; // { url, title, content, time }
+
+// ============================================
+// Auto-fetch current page content
+// ============================================
+function fetchPageContent() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:')) {
+      pageCache = null;
+      return;
+    }
+    chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_CONTENT' }, (resp) => {
+      const indicator = document.getElementById('page-indicator');
+      if (resp && resp.content) {
+        pageCache = {
+          url: tab.url,
+          title: tab.title || '',
+          content: resp.content.substring(0, 16000),
+          time: Date.now()
+        };
+        if (indicator) { indicator.className = 'page-indicator'; indicator.title = `已读取: ${tab.title || tab.url}`; }
+      } else {
+        pageCache = null;
+        if (indicator) { indicator.className = 'page-indicator off'; indicator.title = '未读取到页面内容'; }
+      }
+    });
+  });
+}
+
+// Fetch on load
+fetchPageContent();
+
+// Re-fetch when tab activates or updates
+chrome.tabs.onActivated?.addListener(() => fetchPageContent());
+chrome.tabs.onUpdated?.addListener((tabId, info) => {
+  if (info.status === 'complete') fetchPageContent();
+});
+
+// Re-fetch before each message send
+const originalSendInput = null; // placeholder
 
 // ============================================
 // Help Panel
@@ -512,7 +553,11 @@ async function callAI(userText, mode) {
   isStreaming = true;
   btnSend.disabled = true;
 
-  const systemPrompt = getSystemPrompt(mode);
+  let systemPrompt = getSystemPrompt(mode);
+  // Auto-inject page context when available
+  if (pageCache) {
+    systemPrompt += `\n\n[当前网页上下文]\n标题: ${pageCache.title}\nURL: ${pageCache.url}\n内容:\n${pageCache.content}`;
+  }
   let userContent, displayText;
   const attachment = pendingAttachment;
 

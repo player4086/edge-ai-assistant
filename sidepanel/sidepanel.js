@@ -333,18 +333,26 @@ function appendMessage(role, content, isPartial) {
   div.className = `msg ${role}` + (isPartial ? ' streaming' : '');
   div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
   if (role === 'assistant' && !isPartial) {
+    // Action buttons above the bubble
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
     actions.innerHTML = `
+      <button class="action-btn action-copy" title="复制回复内容">复制</button>
       <button class="action-btn action-regen" title="用当前模式重新生成回复">重新回复</button>
       <button class="action-btn action-tts" title="朗读回复">朗读</button>
     `;
-    // Append inside msg-content so it's always visible within the bubble
-    const contentEl = div.querySelector('.msg-content');
-    contentEl.appendChild(actions);
-    // Bind handlers after inserting
-    contentEl.querySelector('.action-regen').addEventListener('click', () => regenerate());
-    contentEl.querySelector('.action-tts').addEventListener('click', function() {
+    div.insertBefore(actions, div.firstChild);
+    // Bind handlers
+    actions.querySelector('.action-copy').addEventListener('click', () => {
+      const plain = content.replace(/```[\s\S]*?```/g, (m) => m).replace(/<[^>]*>/g, '');
+      navigator.clipboard.writeText(content).then(() => {
+        const btn = actions.querySelector('.action-copy');
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 1500);
+      }).catch(() => {});
+    });
+    actions.querySelector('.action-regen').addEventListener('click', () => regenerate());
+    actions.querySelector('.action-tts').addEventListener('click', function() {
       toggleTTS(this, content);
     });
   }

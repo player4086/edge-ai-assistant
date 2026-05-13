@@ -467,33 +467,34 @@ body {
 
 .msg-content pre:hover .copy-btn { opacity: 1; }
 
-/* Message action buttons (inside bubble, at bottom) */
+/* Message action buttons (above bubble) */
 .msg-actions {
   display: flex;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
+  gap: 4px;
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
+.msg:hover .msg-actions { opacity: 1; }
+
 .action-btn {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text2);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text3);
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  padding: 4px 14px;
-  border-radius: 14px;
+  padding: 2px 8px;
+  border-radius: 4px;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
-  flex: 1;
-  text-align: center;
 }
 
-.action-btn:hover { background: var(--border); color: var(--text); }
-.action-regen:hover { color: var(--green); border-color: var(--green); }
-.action-tts:hover { color: var(--accent); border-color: var(--accent); }
-.action-tts.playing { color: var(--accent); border-color: var(--accent); background: var(--border); }
+.action-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
+.action-copy:hover { color: var(--yellow); }
+.action-regen:hover { color: var(--green); }
+.action-tts:hover { color: var(--accent); }
+.action-tts.playing { color: var(--accent); font-weight: 700; }
 
 /* ============================================
    Typing dots

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 网页助手</title>
+<link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="sp-header">
+  <h1>AI 网页助手</h1>
+  <div class="sp-header-actions">
+    <select id="mode-select">
+      <option value="explain">解释代码</option>
+      <option value="translate">翻译</option>
+      <option value="chat">自由问答</option>
+    </select>
+    <button id="btn-clear" title="清空对话">清空</button>
+    <button id="btn-settings" title="设置 API Key">设置</button>
+  </div>
+</header>
+
+<!-- Chat area -->
+<main id="chat-container">
+  <div id="chat-messages">
+    <div class="msg welcome">
+      <div class="msg-content">
+        <p><strong>欢迎使用 AI 网页助手</strong></p>
+        <p>使用方法：</p>
+        <ul>
+          <li>在网页上<b>选中文本</b> → 点击浮动按钮</li>
+          <li><b>右键</b>选中文本 → 选择 AI 功能</li>
+          <li>直接在下方<b>输入框</b>粘贴内容提问</li>
+        </ul>
+        <p style="color:#a6adc8;">首次使用请点击"设置"按钮配置 API Key</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading indicator -->
+  <div id="loading-indicator" style="display:none;">
+    <div class="msg assistant">
+      <div class="msg-content">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Input area -->
+<footer class="sp-input-area">
+  <textarea id="user-input" rows="2" placeholder="输入问题，或选中网页文本后点击浮动按钮..."></textarea>
+  <div class="input-actions">
+    <span id="char-count">0 / 8000</span>
+    <button id="btn-send" title="发送 (Ctrl+Enter)">发送</button>
+  </div>
+</footer>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>API 设置</h2>
+    <label>API Key
+      <input type="password" id="api-key-input" placeholder="sk-...">
+    </label>
+    <label>API Base URL
+      <input type="text" id="api-base-input" value="https://api.deepseek.com/anthropic">
+    </label>
+    <label>Model
+      <input type="text" id="model-input" value="deepseek-v4-pro[1m]">
+    </label>
+    <div class="modal-actions">
+      <button id="btn-save-settings">保存</button>
+      <button id="btn-close-settings" class="secondary">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="sidepanel.js"></script>
+</body>
+</html>

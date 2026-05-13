@@ -1,0 +1,15 @@
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (user API keys should never be committed)
+.env
+*.secret
+
+# Packaged extension
+*.crx
+*.pem

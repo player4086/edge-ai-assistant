@@ -52,11 +52,7 @@ body::before {
 }
 
 body.has-bg::before {
-  opacity: 0.08;
-}
-
-body.light.has-bg::before {
-  opacity: 0.06;
+  opacity: var(--bg-opacity, 0.08);
 }
 
 /* ============================================
@@ -705,32 +701,91 @@ body {
 .modal-content label input:focus { border-color: var(--accent); }
 
 /* Background preview in settings */
-.bg-preview {
-  width: 100%;
-  height: 60px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  background-size: cover;
-  background-position: center;
+.bg-preview-wrap {
   margin-top: 8px;
-  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
-.bg-preview::after {
-  content: '预览';
-  position: absolute;
-  inset: 0;
+.bg-preview {
+  width: 100%;
+  height: 80px;
+  background-color: var(--bg3);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text3);
-  font-size: 12px;
+  position: relative;
+  transition: background-image 0.3s;
 }
 
-.bg-preview.has-bg::after {
-  content: '';
+.bg-preview-placeholder {
+  color: var(--text3);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.2s;
+}
+
+.bg-preview-wrap.has-bg .bg-preview-placeholder {
+  opacity: 0;
+}
+
+.bg-preview-meta {
+  padding: 6px 10px;
+  background: var(--bg);
+  font-size: 10px;
+  color: var(--text2);
+  border-top: 1px solid var(--border);
+}
+
+.bg-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bg-opacity-row label {
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+.bg-opacity-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.bg-opacity-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.bg-opacity-row input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.bg-opacity-row span {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
 }
 
 /* Template list in modal */

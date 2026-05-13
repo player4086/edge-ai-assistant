@@ -154,9 +154,19 @@
     </label>
     <hr style="border-color:#45475a; margin:14px 0;">
     <h2>自定义背景</h2>
-    <div id="bg-preview" class="bg-preview"></div>
+    <input type="file" id="bg-image-upload" accept="image/*" hidden>
+    <div class="bg-preview-wrap">
+      <div id="bg-preview" class="bg-preview">
+        <span class="bg-preview-placeholder">点击下方按钮选择背景图片</span>
+      </div>
+      <div class="bg-preview-meta" id="bg-meta" style="display:none;"></div>
+    </div>
+    <div class="bg-opacity-row">
+      <label>透明度</label>
+      <input type="range" id="bg-opacity-slider" min="1" max="25" value="8" step="1">
+      <span id="bg-opacity-value">8%</span>
+    </div>
     <div style="display:flex; gap:6px; margin-top:8px;">
-      <input type="file" id="bg-image-upload" accept="image/*" hidden>
       <button id="btn-set-bg" style="flex:1; padding:6px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text); cursor:pointer;">选择背景图片</button>
       <button id="btn-reset-bg" style="padding:6px 12px; border-radius:6px; border:1px solid var(--red); background:transparent; color:var(--red); cursor:pointer;">重置</button>
     </div>

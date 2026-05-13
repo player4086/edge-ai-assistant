@@ -296,35 +296,70 @@ document.getElementById('btn-export').addEventListener('click', () => {
 // ============================================
 const bgImageUpload = document.getElementById('bg-image-upload');
 const bgPreview = document.getElementById('bg-preview');
+const bgPreviewWrap = document.querySelector('.bg-preview-wrap');
+const bgMeta = document.getElementById('bg-meta');
+const bgOpacitySlider = document.getElementById('bg-opacity-slider');
+const bgOpacityValue = document.getElementById('bg-opacity-value');
 
-function applyBackground(bgData) {
+let currentBgData = null;
+
+function applyBackground(bgData, opacity) {
   if (bgData) {
     document.body.style.setProperty('--bg-image', `url(${bgData})`);
+    document.body.style.setProperty('--bg-opacity', (opacity / 100).toString());
     document.body.classList.add('has-bg');
   } else {
     document.body.style.removeProperty('--bg-image');
+    document.body.style.removeProperty('--bg-opacity');
     document.body.classList.remove('has-bg');
   }
 }
 
-// Load saved background on startup
-chrome.storage.local.get({ bgImage: '' }, (s) => {
-  if (s.bgImage) {
-    applyBackground(s.bgImage);
-    updateBgPreview(s.bgImage);
-  }
-});
+function setBgOpacity(opacity) {
+  document.body.style.setProperty('--bg-opacity', (opacity / 100).toString());
+  bgOpacitySlider.value = opacity;
+  bgOpacityValue.textContent = opacity + '%';
+}
 
-function updateBgPreview(bgData) {
+function updateBgPreview(bgData, fileName) {
   if (bgData) {
     bgPreview.style.backgroundImage = `url(${bgData})`;
-    bgPreview.classList.add('has-bg');
+    bgPreviewWrap.classList.add('has-bg');
+    bgMeta.style.display = 'block';
+    bgMeta.textContent = fileName || '自定义图片';
   } else {
     bgPreview.style.backgroundImage = '';
-    bgPreview.classList.remove('has-bg');
+    bgPreviewWrap.classList.remove('has-bg');
+    bgMeta.style.display = 'none';
   }
 }
 
+// Load saved background & opacity on startup
+chrome.storage.local.get({ bgImage: '', bgOpacity: 8, bgFileName: '' }, (s) => {
+  if (s.bgImage) {
+    currentBgData = s.bgImage;
+    applyBackground(s.bgImage, s.bgOpacity);
+    updateBgPreview(s.bgImage, s.bgFileName);
+    bgOpacitySlider.value = s.bgOpacity;
+    bgOpacityValue.textContent = s.bgOpacity + '%';
+  }
+});
+
+// Opacity slider
+bgOpacitySlider.addEventListener('input', () => {
+  const val = parseInt(bgOpacitySlider.value);
+  bgOpacityValue.textContent = val + '%';
+  if (currentBgData) {
+    setBgOpacity(val);
+  }
+});
+
+bgOpacitySlider.addEventListener('change', () => {
+  const val = parseInt(bgOpacitySlider.value);
+  chrome.storage.local.set({ bgOpacity: val });
+});
+
+// File picker
 document.getElementById('btn-set-bg').addEventListener('click', () => bgImageUpload.click());
 
 bgImageUpload.addEventListener('change', () => {
@@ -337,19 +372,25 @@ bgImageUpload.addEventListener('change', () => {
   const reader = new FileReader();
   reader.onload = () => {
     const data = reader.result;
-    chrome.storage.local.set({ bgImage: data }, () => {
-      applyBackground(data);
-      updateBgPreview(data);
+    const opacity = parseInt(bgOpacitySlider.value);
+    currentBgData = data;
+    chrome.storage.local.set({ bgImage: data, bgOpacity: opacity, bgFileName: file.name }, () => {
+      applyBackground(data, opacity);
+      updateBgPreview(data, file.name);
     });
   };
   reader.readAsDataURL(file);
 });
 
+// Reset
 document.getElementById('btn-reset-bg').addEventListener('click', () => {
-  chrome.storage.local.remove('bgImage', () => {
-    applyBackground(null);
+  currentBgData = null;
+  chrome.storage.local.remove(['bgImage', 'bgFileName'], () => {
+    applyBackground(null, 8);
     updateBgPreview(null);
     bgImageUpload.value = '';
+    bgOpacitySlider.value = 8;
+    bgOpacityValue.textContent = '8%';
   });
 });
 

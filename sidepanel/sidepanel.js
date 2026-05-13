@@ -70,9 +70,6 @@ chrome.tabs.onUpdated?.addListener((tabId, info) => {
   if (info.status === 'complete') fetchPageContent();
 });
 
-// Re-fetch before each message send
-const originalSendInput = null; // placeholder
-
 // ============================================
 // Help Panel
 // ============================================
@@ -160,10 +157,10 @@ function initSelect(el, onChange) {
     });
   });
 }
+// Close dropdowns on outside click (outside initSelect to avoid duplicate listeners)
 document.addEventListener('click', (e) => {
-  [modeSelect, langSelect].forEach(el => {
-    if (el && !el.contains(e.target)) el.classList.remove('open');
-  });
+  if (!modeSelect.contains(e.target)) modeSelect.classList.remove('open');
+  if (!langSelect.contains(e.target)) langSelect.classList.remove('open');
 });
 
 function getMode() {
@@ -304,9 +301,9 @@ function renderMarkdown(text) {
   });
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/^###(?!#) (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##(?!#) (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^#(?!#) (.+)$/gm, '<h1>$1</h1>');
   html = html.replace(/^(\s*)[-*] (.+)$/gm, '$1<li>$2</li>');
   html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
   html = html.replace(/^(?!<[hupol])(.+)$/gm, '<p>$1</p>');
@@ -718,7 +715,8 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 chrome.runtime.onMessage.addListener((msg, sender) => {
   // Only process messages relayed by background (not direct from content scripts)
   if (msg.type === 'QUERY_AI' && msg.text) {
-    if (sender.tab) return false; // ignore direct from content, background will relay
+    if (sender.tab) return false;
+    if (isStreaming) return false; // prevent concurrent API calls
     if (msg.mode && ['explain','translate','summarize','readpage'].includes(msg.mode)) setMode(msg.mode);
     if (msg.mode === 'translate') langSelect.style.display = 'block';
     callAI(msg.text, getMode());

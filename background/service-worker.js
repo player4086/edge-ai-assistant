@@ -43,6 +43,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
   const modeMap = { explain: 'explain', translate: 'translate' };
   if (modeMap[command]) {
     chrome.tabs.sendMessage(tab.id, { type: 'GET_SELECTED_TEXT' }, (resp) => {
+      if (chrome.runtime.lastError) return;
       if (resp && resp.text) {
         relayToPanel(tab, resp.text, modeMap[command]);
       }
@@ -50,11 +51,17 @@ chrome.commands.onCommand.addListener((command, tab) => {
   }
 });
 
-function relayToPanel(tab, text, mode) {
+function relayToPanel(tab, text, mode, retries) {
+  retries = retries || 0;
   chrome.sidePanel.open({ tabId: tab.id }).then(() => {
-    setTimeout(() => {
-      chrome.runtime.sendMessage({ type: 'QUERY_AI', text, mode });
-    }, 300);
+    const send = () => {
+      chrome.runtime.sendMessage({ type: 'QUERY_AI', text, mode }, (resp) => {
+        if (chrome.runtime.lastError && retries < 3) {
+          setTimeout(() => relayToPanel(tab, text, mode, retries + 1), 200);
+        }
+      });
+    };
+    setTimeout(send, 150);
   });
 }
 

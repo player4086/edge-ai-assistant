@@ -338,21 +338,18 @@ function appendMessage(role, content, isPartial) {
   if (role === 'assistant' && !isPartial) {
     const actions = document.createElement('div');
     actions.className = 'msg-actions';
-    // Regenerate button
-    const regenBtn = document.createElement('button');
-    regenBtn.className = 'action-btn action-regen';
-    regenBtn.title = '用当前模式重新生成回复';
-    regenBtn.textContent = '重新回复';
-    regenBtn.addEventListener('click', () => regenerate());
-    actions.appendChild(regenBtn);
-    // TTS button
-    const ttsBtn = document.createElement('button');
-    ttsBtn.className = 'action-btn action-tts';
-    ttsBtn.title = '朗读回复';
-    ttsBtn.textContent = '朗读';
-    ttsBtn.addEventListener('click', () => toggleTTS(ttsBtn, content));
-    actions.appendChild(ttsBtn);
-    div.appendChild(actions);
+    actions.innerHTML = `
+      <button class="action-btn action-regen" title="用当前模式重新生成回复">重新回复</button>
+      <button class="action-btn action-tts" title="朗读回复">朗读</button>
+    `;
+    // Append inside msg-content so it's always visible within the bubble
+    const contentEl = div.querySelector('.msg-content');
+    contentEl.appendChild(actions);
+    // Bind handlers after inserting
+    contentEl.querySelector('.action-regen').addEventListener('click', () => regenerate());
+    contentEl.querySelector('.action-tts').addEventListener('click', function() {
+      toggleTTS(this, content);
+    });
   }
   const welcome = chatMessages.querySelector('.msg.welcome');
   if (welcome) welcome.remove();

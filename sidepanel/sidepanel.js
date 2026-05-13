@@ -292,6 +292,68 @@ document.getElementById('btn-export').addEventListener('click', () => {
 });
 
 // ============================================
+// Custom Background
+// ============================================
+const bgImageUpload = document.getElementById('bg-image-upload');
+const bgPreview = document.getElementById('bg-preview');
+
+function applyBackground(bgData) {
+  if (bgData) {
+    document.body.style.setProperty('--bg-image', `url(${bgData})`);
+    document.body.classList.add('has-bg');
+  } else {
+    document.body.style.removeProperty('--bg-image');
+    document.body.classList.remove('has-bg');
+  }
+}
+
+// Load saved background on startup
+chrome.storage.local.get({ bgImage: '' }, (s) => {
+  if (s.bgImage) {
+    applyBackground(s.bgImage);
+    updateBgPreview(s.bgImage);
+  }
+});
+
+function updateBgPreview(bgData) {
+  if (bgData) {
+    bgPreview.style.backgroundImage = `url(${bgData})`;
+    bgPreview.classList.add('has-bg');
+  } else {
+    bgPreview.style.backgroundImage = '';
+    bgPreview.classList.remove('has-bg');
+  }
+}
+
+document.getElementById('btn-set-bg').addEventListener('click', () => bgImageUpload.click());
+
+bgImageUpload.addEventListener('change', () => {
+  const file = bgImageUpload.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('背景图片不能超过 5 MB');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const data = reader.result;
+    chrome.storage.local.set({ bgImage: data }, () => {
+      applyBackground(data);
+      updateBgPreview(data);
+    });
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-reset-bg').addEventListener('click', () => {
+  chrome.storage.local.remove('bgImage', () => {
+    applyBackground(null);
+    updateBgPreview(null);
+    bgImageUpload.value = '';
+  });
+});
+
+// ============================================
 // Upload Handling
 // ============================================
 document.getElementById('btn-upload-file').addEventListener('click', () => fileUpload.click());

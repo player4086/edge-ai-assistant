@@ -36,6 +36,30 @@ body.light {
 }
 
 /* ============================================
+   Body Background Overlay
+   ============================================ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s;
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+body.has-bg::before {
+  opacity: 0.08;
+}
+
+body.light.has-bg::before {
+  opacity: 0.06;
+}
+
+/* ============================================
    Reset & Base
    ============================================ */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -679,6 +703,35 @@ body {
 }
 
 .modal-content label input:focus { border-color: var(--accent); }
+
+/* Background preview in settings */
+.bg-preview {
+  width: 100%;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  background-size: cover;
+  background-position: center;
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-preview::after {
+  content: '预览';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.bg-preview.has-bg::after {
+  content: '';
+}
 
 /* Template list in modal */
 #templates-list {

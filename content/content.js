@@ -8,6 +8,7 @@ function ensureFloatBox() {
   floatBox.innerHTML = `
     <button id="ai-btn-explain" title="AI 解释代码">解释</button>
     <button id="ai-btn-translate" title="AI 翻译">翻译</button>
+    <button id="ai-btn-summarize" title="AI 摘要页面">摘要</button>
     <button id="ai-btn-highlight" title="高亮标记">高亮</button>
   `;
   document.body.appendChild(floatBox);
@@ -20,6 +21,10 @@ function ensureFloatBox() {
     e.preventDefault();
     sendQuery('translate');
   });
+  floatBox.querySelector('#ai-btn-summarize').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    sendQuery('summarize');
+  });
   floatBox.querySelector('#ai-btn-highlight').addEventListener('mousedown', (e) => {
     e.preventDefault();
     doHighlight();
@@ -28,16 +33,22 @@ function ensureFloatBox() {
   // Hide floatBox when clicking elsewhere
   document.addEventListener('mousedown', (e) => {
     if (floatBox && !floatBox.contains(e.target)) {
-      floatBox.style.display = 'none';
+      floatBox.classList.remove('visible');
     }
   }, true);
 }
 
 function sendQuery(mode) {
-  const text = window.getSelection().toString().trim();
-  if (!text) return;
+  let text;
+  if (mode === 'summarize') {
+    text = extractPageContent().substring(0, 8000);
+    if (!text) return;
+  } else {
+    text = window.getSelection().toString().trim();
+    if (!text) return;
+  }
   chrome.runtime.sendMessage({ type: 'QUERY_AI', text, mode });
-  floatBox.style.display = 'none';
+  floatBox.classList.remove('visible');
 }
 
 // --- Highlight ---
@@ -55,14 +66,20 @@ function doHighlight() {
   mark.className = 'ai-highlight';
   mark.dataset.hid = hid;
   mark.textContent = text;
+  mark.className = 'ai-highlight new-highlight';
 
   range.deleteContents();
   range.insertNode(mark);
 
+  // Remove animation class after it ends
+  mark.addEventListener('animationend', () => {
+    mark.classList.remove('new-highlight');
+  }, { once: true });
+
   // Persist to storage
   saveHighlight(hid, text, getPageKey());
 
-  floatBox.style.display = 'none';
+  floatBox.classList.remove('visible');
   sel.removeAllRanges();
 }
 
@@ -95,13 +112,15 @@ document.addEventListener('click', (e) => {
   if (e.target.matches('mark.ai-highlight')) {
     const mark = e.target;
     const hid = mark.dataset.hid;
-    const parent = mark.parentNode;
-    // Replace mark with its text content
-    while (mark.firstChild) {
-      parent.insertBefore(mark.firstChild, mark);
-    }
-    parent.removeChild(mark);
-    parent.normalize();
+    mark.classList.add('removing');
+    mark.addEventListener('transitionend', () => {
+      const parent = mark.parentNode;
+      while (mark.firstChild) {
+        parent.insertBefore(mark.firstChild, mark);
+      }
+      parent.removeChild(mark);
+      parent.normalize();
+    }, { once: true });
     removeHighlight(hid);
   }
 });
@@ -177,7 +196,7 @@ document.addEventListener('mouseup', (e) => {
     const sel = window.getSelection();
     const text = sel.toString().trim();
     if (!text || text.length === 0) {
-      if (floatBox) floatBox.style.display = 'none';
+      if (floatBox) floatBox.classList.remove('visible');
       return;
     }
 
@@ -201,21 +220,41 @@ document.addEventListener('mouseup', (e) => {
 
     floatBox.style.top = top + 'px';
     floatBox.style.left = left + 'px';
-    floatBox.style.display = 'block';
+    floatBox.classList.add('visible');
   }, 0);
 });
 
-// --- Listen for request from sidepanel ---
+// --- Listen for requests ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GET_SELECTED_TEXT') {
     const text = window.getSelection().toString().trim();
-    if (text) {
-      sendResponse({ text });
-    }
+    sendResponse({ text: text || '' });
     return true;
+  }
+  if (msg.type === 'GET_PAGE_CONTENT') {
+    const content = extractPageContent();
+    sendResponse({ content });
+    return true;
+  }
+  if (msg.type === 'HIGHLIGHT_SELECTION') {
+    doHighlight();
+    return false;
   }
   return false;
 });
+
+function extractPageContent() {
+  // Try to get main content first
+  const main = document.querySelector('article, main, [role="main"], .content, .post, .article');
+  const source = main || document.body.cloneNode(true);
+  // Remove non-content elements
+  const clone = source.cloneNode ? source.cloneNode(true) : source;
+  if (clone.querySelectorAll) {
+    clone.querySelectorAll('script,style,noscript,header,footer,nav,iframe,svg,img,video,audio,button,.sidebar,.nav,.menu,.ad').forEach(e => e.remove());
+  }
+  const text = (clone.innerText || clone.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  return text.substring(0, 16000);
+}
 
 // --- Init ---
 restoreHighlights();

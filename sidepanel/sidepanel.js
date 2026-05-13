@@ -1,149 +1,336 @@
-// --- DOM refs ---
+// === DOM refs ===
 const chatMessages = document.getElementById('chat-messages');
 const loadingEl = document.getElementById('loading-indicator');
 const userInput = document.getElementById('user-input');
 const btnSend = document.getElementById('btn-send');
 const charCount = document.getElementById('char-count');
 const modeSelect = document.getElementById('mode-select');
+const langSelect = document.getElementById('lang-select');
+const templateBar = document.getElementById('template-bar');
 const settingsModal = document.getElementById('settings-modal');
 const apiKeyInput = document.getElementById('api-key-input');
 const apiBaseInput = document.getElementById('api-base-input');
 const modelInput = document.getElementById('model-input');
+const templatesList = document.getElementById('templates-list');
+const fileUpload = document.getElementById('file-upload');
+const imageUpload = document.getElementById('image-upload');
+const uploadPreview = document.getElementById('upload-preview');
+const previewContent = document.getElementById('preview-content');
+const btnClearUpload = document.getElementById('btn-clear-upload');
 
-// --- State ---
+// === State ===
 let isStreaming = false;
 let conversationHistory = [];
+let pendingAttachment = null;
+let currentTTS = null;
 
-// --- Settings ---
+// ============================================
+// Theme
+// ============================================
+function applyTheme(theme) {
+  document.body.className = theme;
+}
+chrome.storage.local.get({ theme: 'dark' }, (s) => applyTheme(s.theme));
+document.getElementById('btn-theme').addEventListener('click', () => {
+  const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+  applyTheme(next);
+  chrome.storage.local.set({ theme: next });
+});
+
+// ============================================
+// Settings
+// ============================================
 function getSettings() {
   return new Promise((resolve) => {
     chrome.storage.local.get({
-      apiKey: '',
-      apiBase: 'https://api.deepseek.com/anthropic',
-      model: 'deepseek-v4-pro[1m]'
+      apiKey: '', apiBase: 'https://api.deepseek.com/anthropic', model: 'deepseek-v4-pro[1m]'
     }, resolve);
   });
 }
-
 function loadSettingsToForm() {
   chrome.storage.local.get({
-    apiKey: '',
-    apiBase: 'https://api.deepseek.com/anthropic',
-    model: 'deepseek-v4-pro[1m]'
+    apiKey: '', apiBase: 'https://api.deepseek.com/anthropic', model: 'deepseek-v4-pro[1m]'
   }, (s) => {
     apiKeyInput.value = s.apiKey;
     apiBaseInput.value = s.apiBase;
     modelInput.value = s.model;
+    loadTemplates();
   });
 }
 
-// --- System Prompts ---
-function getSystemPrompt(mode) {
-  if (mode === 'explain') {
-    return '你是一个资深软件工程师。用中文解释用户提供的代码。说明代码的功能、关键逻辑、输入输出，以及值得注意的细节。如果代码有问题，请指出。';
-  }
-  if (mode === 'translate') {
-    return '你是一个专业翻译。将用户提供的文本翻译成中文。如果是代码注释或文档，保留技术术语的准确性。只输出翻译结果，不要解释。';
-  }
-  return '你是一个有帮助的AI助手。请用中文回答用户的问题。如果用户提供代码，请解释它。如果用户提供外文，请翻译它。';
+// ============================================
+// Custom Select (shared logic)
+// ============================================
+function initSelect(el, onChange) {
+  const trigger = el.querySelector('.custom-select-trigger');
+  const label = el.querySelector('.custom-select-label');
+  const options = el.querySelectorAll('.custom-option');
+
+  trigger.addEventListener('click', () => el.classList.toggle('open'));
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      options.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      label.textContent = opt.textContent;
+      el.classList.remove('open');
+      if (onChange) onChange(opt.dataset.value);
+    });
+  });
+}
+document.addEventListener('click', (e) => {
+  [modeSelect, langSelect].forEach(el => {
+    if (el && !el.contains(e.target)) el.classList.remove('open');
+  });
+});
+
+function getMode() {
+  return modeSelect.querySelector('.custom-option.selected').dataset.value;
+}
+function setMode(value) {
+  modeSelect.querySelectorAll('.custom-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+  modeSelect.querySelector('.custom-select-label').textContent =
+    modeSelect.querySelector(`.custom-option[data-value="${value}"]`).textContent;
 }
 
-// --- Simple Markdown → HTML ---
-function renderMarkdown(text) {
-  // Escape HTML entities first (except what we'll generate)
-  let html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+function getLang() {
+  return langSelect.querySelector('.custom-option.selected').dataset.value;
+}
 
-  // Fenced code blocks with language
+// Mode change: show/hide language selector
+initSelect(modeSelect, (value) => {
+  langSelect.style.display = (value === 'translate') ? 'block' : 'none';
+});
+initSelect(langSelect, () => {});
+
+// ============================================
+// Templates (quick bar)
+// ============================================
+templateBar.addEventListener('click', (e) => {
+  if (e.target.classList.contains('template-btn')) {
+    const prompt = e.target.dataset.prompt;
+    userInput.value = prompt + '\n' + userInput.value;
+    userInput.focus();
+    updateCharCount();
+  }
+});
+
+// Custom templates in settings
+function loadTemplates() {
+  chrome.storage.local.get({ templates: [] }, (s) => {
+    const temps = s.templates;
+    templatesList.innerHTML = temps.map((t, i) =>
+      `<div class="template-item">
+        <span class="temp-name">${escHtml(t.name)}</span>
+        <span class="temp-prompt">${escHtml(t.prompt)}</span>
+        <span class="temp-del" data-idx="${i}">&times;</span>
+      </div>`
+    ).join('');
+    // Delete handlers
+    templatesList.querySelectorAll('.temp-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        temps.splice(parseInt(btn.dataset.idx), 1);
+        chrome.storage.local.set({ templates: temps }, loadTemplates);
+      });
+    });
+    // Rebuild quick bar
+    rebuildTemplateBar(temps);
+  });
+}
+
+function rebuildTemplateBar(customTemplates) {
+  // Remove old custom buttons
+  templateBar.querySelectorAll('.template-btn.custom').forEach(b => b.remove());
+  customTemplates.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'template-btn custom';
+    btn.dataset.prompt = t.prompt;
+    btn.textContent = t.name;
+    templateBar.appendChild(btn);
+  });
+}
+
+document.getElementById('btn-add-template').addEventListener('click', () => {
+  const nameEl = document.getElementById('template-name-input');
+  const promptEl = document.getElementById('template-prompt-input');
+  const name = nameEl.value.trim();
+  const prompt = promptEl.value.trim();
+  if (!name || !prompt) return;
+  chrome.storage.local.get({ templates: [] }, (s) => {
+    const temps = s.templates;
+    temps.push({ name, prompt });
+    chrome.storage.local.set({ templates: temps }, () => {
+      nameEl.value = '';
+      promptEl.value = '';
+      loadTemplates();
+    });
+  });
+});
+
+// ============================================
+// System Prompts
+// ============================================
+function getSystemPrompt(mode) {
+  if (mode === 'explain') {
+    return '你是资深软件工程师。用中文解释用户提供的代码：功能、关键逻辑、输入输出及注意事项。有问题请指出。';
+  }
+  if (mode === 'translate') {
+    const target = getLang();
+    return `你是专业翻译。将用户文本翻译成${target}。代码注释和文档保留技术术语准确性。只输出翻译结果。`;
+  }
+  if (mode === 'summarize') {
+    return '你是专业内容摘要助手。将用户提供的网页内容精炼为3-5个要点，每个要点一两句话。突出关键信息和结论。用中文输出。';
+  }
+  return '你是AI助手，用中文回答。如果用户提供代码就解释它，如果是外文就翻译它，如果是网页内容就摘要它。';
+}
+
+// ============================================
+// Markdown → HTML
+// ============================================
+function renderMarkdown(text) {
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
     const langLabel = lang ? `<span class="code-lang">${lang}</span>` : '';
     return `<pre>${langLabel}<button class="copy-btn" data-code="${escapeAttr(code.trim())}">复制</button><code>${code.trim()}</code></pre>`;
   });
-
-  // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Bold
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-  // Headers
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-  // Unordered lists
   html = html.replace(/^(\s*)[-*] (.+)$/gm, '$1<li>$2</li>');
   html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-
-  // Ordered lists
-  html = html.replace(/^(\s*)\d+\. (.+)$/gm, '$1<li>$2</li>');
-
-  // Paragraphs: wrap consecutive non-empty, non-tag lines
   html = html.replace(/^(?!<[hupol])(.+)$/gm, '<p>$1</p>');
-
-  // Clean up empty paragraphs
   html = html.replace(/<p>\s*<\/p>/g, '<br>');
-
   return html;
 }
-
 function escapeAttr(text) {
   return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+function escHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
-// --- Append message to chat ---
-function appendMessage(role, content, isPartial = false) {
-  // Remove partial message if replacing
+// ============================================
+// Append Message
+// ============================================
+function appendMessage(role, content, isPartial) {
   if (isPartial) {
     const existing = chatMessages.querySelector('.msg.streaming');
     if (existing) {
-      // Update content
-      const contentEl = existing.querySelector('.msg-content');
-      contentEl.innerHTML = renderMarkdown(content);
-      bindCopyButtons(contentEl);
+      existing.querySelector('.msg-content').innerHTML = renderMarkdown(content);
       chatContainer().scrollTop = chatContainer().scrollHeight;
       return;
     }
   }
-
   const div = document.createElement('div');
   div.className = `msg ${role}` + (isPartial ? ' streaming' : '');
   div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
-
-  // Remove welcome message
+  if (role === 'assistant' && !isPartial) {
+    const btn = document.createElement('button');
+    btn.className = 'tts-btn';
+    btn.title = '朗读';
+    btn.textContent = '🔊';
+    btn.addEventListener('click', () => toggleTTS(btn, content));
+    div.querySelector('.msg-content').appendChild(btn);
+  }
   const welcome = chatMessages.querySelector('.msg.welcome');
   if (welcome) welcome.remove();
-
   chatMessages.appendChild(div);
-  bindCopyButtons(div);
   chatContainer().scrollTop = chatContainer().scrollHeight;
 }
 
-function bindCopyButtons(parent) {
-  parent.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const code = btn.dataset.code;
-      navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = '已复制';
-        setTimeout(() => { btn.textContent = '复制'; }, 1500);
-      });
-    });
+function chatContainer() { return document.getElementById('chat-container'); }
+
+// ============================================
+// TTS (Web Speech API)
+// ============================================
+function toggleTTS(btn, text) {
+  if (currentTTS) {
+    window.speechSynthesis.cancel();
+    if (currentTTS.btn === btn) { currentTTS = null; btn.classList.remove('playing'); return; }
+  }
+  const plain = text.replace(/```[\s\S]*?```/g, '').replace(/[#*`>\-\[\]()]/g, '').trim();
+  if (!plain) return;
+  const utterance = new SpeechSynthesisUtterance(plain);
+  utterance.lang = 'zh-CN';
+  utterance.rate = 1.0;
+  utterance.onend = () => { currentTTS = null; btn.classList.remove('playing'); };
+  utterance.onerror = () => { currentTTS = null; btn.classList.remove('playing'); };
+  currentTTS = { btn, utterance };
+  btn.classList.add('playing');
+  window.speechSynthesis.speak(utterance);
+}
+
+// ============================================
+// Export Conversation
+// ============================================
+document.getElementById('btn-export').addEventListener('click', () => {
+  let md = '# AI 网页助手 - 对话记录\n\n';
+  md += `> 导出时间: ${new Date().toLocaleString()}\n\n---\n\n`;
+  conversationHistory.forEach(m => {
+    const role = m.role === 'user' ? '**你**' : '**AI**';
+    let content = typeof m.content === 'string' ? m.content : '[图片/复合内容]';
+    md += `### ${role}\n\n${content}\n\n---\n\n`;
   });
-}
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ai-chat-${Date.now()}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
-function chatContainer() {
-  return document.getElementById('chat-container');
-}
+// ============================================
+// Upload Handling
+// ============================================
+document.getElementById('btn-upload-file').addEventListener('click', () => fileUpload.click());
+document.getElementById('btn-upload-image').addEventListener('click', () => imageUpload.click());
 
-// --- Show/hide loading ---
+fileUpload.addEventListener('change', () => {
+  const file = fileUpload.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAttachment = { type: 'file', name: file.name, data: reader.result };
+    previewContent.innerHTML = `<strong>文件:</strong> ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+    uploadPreview.style.display = 'flex';
+  };
+  reader.onerror = () => appendMessage('assistant', '**读取文件失败，请重试。**');
+  reader.readAsText(file);
+});
+
+imageUpload.addEventListener('change', () => {
+  const file = imageUpload.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { appendMessage('assistant', '**图片不能超过 10 MB。**'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAttachment = { type: 'image', name: file.name, data: reader.result, mimeType: file.type };
+    previewContent.innerHTML = `<img src="${reader.result}" alt="preview"> <span>${file.name}</span>`;
+    uploadPreview.style.display = 'flex';
+  };
+  reader.onerror = () => appendMessage('assistant', '**读取图片失败，请重试。**');
+  reader.readAsDataURL(file);
+});
+
+function clearAttachment() {
+  pendingAttachment = null; uploadPreview.style.display = 'none';
+  previewContent.innerHTML = ''; fileUpload.value = ''; imageUpload.value = '';
+}
+btnClearUpload.addEventListener('click', clearAttachment);
+
+// ============================================
+// Loading
+// ============================================
 function setLoading(show) {
   loadingEl.style.display = show ? 'block' : 'none';
   if (show) chatContainer().scrollTop = chatContainer().scrollHeight;
 }
 
-// --- Call AI API (Streaming) ---
+// ============================================
+// API Call
+// ============================================
 async function callAI(userText, mode) {
   const settings = await getSettings();
   if (!settings.apiKey) {
@@ -156,98 +343,81 @@ async function callAI(userText, mode) {
   btnSend.disabled = true;
 
   const systemPrompt = getSystemPrompt(mode);
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...conversationHistory.slice(-10),
-    { role: 'user', content: userText }
-  ];
+  let userContent, displayText;
+  const attachment = pendingAttachment;
 
-  // Save user message
-  appendMessage('user', userText);
-  conversationHistory.push({ role: 'user', content: userText });
+  if (attachment && attachment.type === 'image') {
+    const base64Data = attachment.data.split(',')[1] || attachment.data;
+    userContent = [
+      { type: 'image', source: { type: 'base64', media_type: attachment.mimeType, data: base64Data } },
+      { type: 'text', text: userText || '请描述这张图片' }
+    ];
+    displayText = userText ? `[图片: ${attachment.name}] ${userText}` : `[图片: ${attachment.name}]`;
+  } else if (attachment && attachment.type === 'file') {
+    const ext = attachment.name.split('.').pop() || '';
+    userContent = userText + `\n\`\`\`${ext}\n${attachment.data}\n\`\`\`\n`;
+    displayText = userText + `\n[文件: ${attachment.name}]`;
+  } else {
+    userContent = userText;
+    displayText = userText;
+  }
+
+  clearAttachment();
+
+  const messages = [...conversationHistory.slice(-10), { role: 'user', content: userContent }];
+  appendMessage('user', displayText);
+  conversationHistory.push({ role: 'user', content: userContent });
 
   const url = settings.apiBase.replace(/\/+$/, '') + '/v1/messages';
 
   try {
     const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': settings.apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        max_tokens: 4096,
-        stream: true,
-        messages
-      })
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: settings.model, max_tokens: 4096, stream: true, system: systemPrompt, messages })
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`API 错误 ${resp.status}: ${errText}`);
-    }
+    if (!resp.ok) throw new Error(`API 错误 ${resp.status}: ${await resp.text()}`);
 
-    // Parse SSE stream
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
-    let fullContent = '';
-    let firstChunk = true;
+    let buffer = '', fullContent = '', firstChunk = true;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
-
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-        const data = trimmed.slice(6);
+        if (!line.trim() || !line.trim().startsWith('data: ')) continue;
+        const data = line.trim().slice(6);
         if (data === '[DONE]') continue;
-
         try {
-          const parsed = JSON.parse(data);
-
-          // Anthropic SSE format: { type: 'content_block_delta', delta: { type: 'text_delta', text: '...' } }
-          if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-            fullContent += parsed.delta.text;
-            if (firstChunk) {
-              setLoading(false);
-              appendMessage('assistant', fullContent, true);
-              firstChunk = false;
-            } else {
-              appendMessage('assistant', fullContent, true);
-            }
+          const p = JSON.parse(data);
+          if (p.type === 'content_block_delta' && p.delta?.text) {
+            fullContent += p.delta.text;
+            if (firstChunk) { setLoading(false); appendMessage('assistant', fullContent, true); firstChunk = false; }
+            else { appendMessage('assistant', fullContent, true); }
           }
-        } catch (e) {
-          // skip unparseable lines
-        }
+        } catch(e) {}
       }
     }
 
-    // Finalize
     const finalEl = chatMessages.querySelector('.msg.streaming');
     if (finalEl) finalEl.classList.remove('streaming');
 
     if (fullContent) {
       conversationHistory.push({ role: 'assistant', content: fullContent });
-      // Keep conversation from growing too large
-      if (conversationHistory.length > 20) {
-        conversationHistory = conversationHistory.slice(-20);
-      }
+      if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
     } else if (firstChunk) {
       setLoading(false);
       appendMessage('assistant', '_(AI 未返回内容，请重试)_');
     }
   } catch (err) {
     setLoading(false);
-    const finalEl = chatMessages.querySelector('.msg.streaming');
-    if (finalEl) finalEl.remove();
+    const fe = chatMessages.querySelector('.msg.streaming');
+    if (fe) fe.remove();
     appendMessage('assistant', `**请求失败**\n\n\`\`\`\n${err.message}\n\`\`\``);
   } finally {
     isStreaming = false;
@@ -255,85 +425,62 @@ async function callAI(userText, mode) {
   }
 }
 
-// --- Send current input ---
+// ============================================
+// Send logic
+// ============================================
 function sendInput() {
   if (isStreaming) return;
   const text = userInput.value.trim();
   if (!text) return;
-  const mode = modeSelect.value;
   userInput.value = '';
   updateCharCount();
-  callAI(text, mode);
+  callAI(text, getMode());
 }
 
-// --- Char count ---
 function updateCharCount() {
   const len = userInput.value.length;
   charCount.textContent = `${len} / 8000`;
-  charCount.style.color = len > 8000 ? '#f38ba8' : '#6c7086';
+  charCount.style.color = len > 8000 ? '#f38ba8' : '';
 }
 
-// --- Event Listeners ---
+// ============================================
+// Event Listeners
+// ============================================
 btnSend.addEventListener('click', sendInput);
-
 userInput.addEventListener('input', updateCharCount);
-
 userInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    e.preventDefault();
-    sendInput();
-  }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendInput(); }
 });
 
-// Settings modal
-document.getElementById('btn-settings').addEventListener('click', () => {
-  loadSettingsToForm();
-  settingsModal.style.display = 'flex';
-});
-
-document.getElementById('btn-close-settings').addEventListener('click', () => {
-  settingsModal.style.display = 'none';
-});
-
+// Settings
+document.getElementById('btn-settings').addEventListener('click', () => { loadSettingsToForm(); settingsModal.style.display = 'flex'; });
+document.getElementById('btn-close-settings').addEventListener('click', () => { settingsModal.style.display = 'none'; });
 document.getElementById('btn-save-settings').addEventListener('click', () => {
   chrome.storage.local.set({
-    apiKey: apiKeyInput.value.trim(),
-    apiBase: apiBaseInput.value.trim(),
-    model: modelInput.value.trim()
-  }, () => {
-    settingsModal.style.display = 'none';
-  });
+    apiKey: apiKeyInput.value.trim(), apiBase: apiBaseInput.value.trim(), model: modelInput.value.trim()
+  }, () => { settingsModal.style.display = 'none'; });
 });
+settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
 
-settingsModal.addEventListener('click', (e) => {
-  if (e.target === settingsModal) settingsModal.style.display = 'none';
-});
-
-// Clear chat
+// Clear
 document.getElementById('btn-clear').addEventListener('click', () => {
   conversationHistory = [];
-  chatMessages.innerHTML = `
-    <div class="msg welcome">
-      <div class="msg-content">
-        <p><strong>对话已清空</strong></p>
-        <p>选中网页文本或输入新问题开始对话。</p>
-      </div>
-    </div>
-  `;
+  chatMessages.innerHTML = `<div class="msg welcome"><div class="msg-content"><p><strong>对话已清空</strong></p><p>选中网页文本或输入新问题开始对话。</p></div></div>`;
 });
 
-// --- Listen for messages from background/content ---
+// Messages from background/content
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'QUERY_AI' && msg.text) {
-    // Set mode if provided
-    if (msg.mode && (msg.mode === 'explain' || msg.mode === 'translate')) {
-      modeSelect.value = msg.mode;
-    }
-    callAI(msg.text, modeSelect.value);
+    if (msg.mode && ['explain','translate','summarize'].includes(msg.mode)) setMode(msg.mode);
+    if (msg.mode === 'translate') langSelect.style.display = 'block';
+    callAI(msg.text, getMode());
     return true;
   }
   return false;
 });
 
-// --- Init ---
+// ============================================
+// Init
+// ============================================
 updateCharCount();
+loadTemplates();

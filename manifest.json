@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "AI 网页助手",
-  "version": "1.0",
-  "description": "AI 驱动的网页内容翻译、代码解释与高亮标记工具",
+  "version": "1.1",
+  "description": "AI 驱动的网页内容翻译、代码解释、摘要生成与高亮标记工具",
   "permissions": [
     "sidePanel",
     "storage",
     "contextMenus",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "https://api.deepseek.com/*"
@@ -26,6 +27,28 @@
       "run_at": "document_end"
     }
   ],
+  "commands": {
+    "explain": {
+      "suggested_key": { "default": "Alt+E" },
+      "description": "AI 解释选中代码"
+    },
+    "translate": {
+      "suggested_key": { "default": "Alt+T" },
+      "description": "AI 翻译选中文本"
+    },
+    "highlight": {
+      "suggested_key": { "default": "Alt+H" },
+      "description": "高亮选中文本"
+    },
+    "summarize": {
+      "suggested_key": { "default": "Alt+S" },
+      "description": "AI 摘要当前页面"
+    },
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+A" },
+      "description": "打开侧边栏"
+    }
+  },
   "icons": {
     "128": "icons/icon-128.png"
   },

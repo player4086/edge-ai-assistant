@@ -6,21 +6,59 @@
 <title>AI 网页助手</title>
 <link rel="stylesheet" href="sidepanel.css">
 </head>
-<body>
+<body class="dark">
 
 <!-- Header -->
 <header class="sp-header">
   <h1>AI 网页助手</h1>
   <div class="sp-header-actions">
-    <select id="mode-select">
-      <option value="explain">解释代码</option>
-      <option value="translate">翻译</option>
-      <option value="chat">自由问答</option>
-    </select>
+    <button id="btn-theme" title="切换主题">主题</button>
+    <button id="btn-export" title="导出对话">导出</button>
     <button id="btn-clear" title="清空对话">清空</button>
-    <button id="btn-settings" title="设置 API Key">设置</button>
+    <button id="btn-settings" title="设置">设置</button>
   </div>
 </header>
+
+<!-- Mode + Language Bar -->
+<div class="mode-bar">
+  <div class="custom-select" id="mode-select">
+    <div class="custom-select-trigger">
+      <span class="custom-select-label">自由问答</span>
+      <svg class="custom-select-arrow" width="10" height="6" viewBox="0 0 10 6"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+    </div>
+    <div class="custom-select-dropdown">
+      <div class="custom-option selected" data-value="chat">自由问答</div>
+      <div class="custom-option" data-value="explain">解释代码</div>
+      <div class="custom-option" data-value="translate">翻译</div>
+      <div class="custom-option" data-value="summarize">摘要</div>
+    </div>
+  </div>
+  <div class="custom-select" id="lang-select" style="display:none;">
+    <div class="custom-select-trigger">
+      <span class="custom-select-label">中文</span>
+      <svg class="custom-select-arrow" width="10" height="6" viewBox="0 0 10 6"><path d="M0 0l5 6 5-6z" fill="currentColor"/></svg>
+    </div>
+    <div class="custom-select-dropdown">
+      <div class="custom-option selected" data-value="中文">中文</div>
+      <div class="custom-option" data-value="English">English</div>
+      <div class="custom-option" data-value="日本語">日本語</div>
+      <div class="custom-option" data-value="한국어">한국어</div>
+      <div class="custom-option" data-value="Français">Français</div>
+      <div class="custom-option" data-value="Deutsch">Deutsch</div>
+      <div class="custom-option" data-value="Español">Español</div>
+      <div class="custom-option" data-value="Русский">Русский</div>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt Templates -->
+<div class="template-bar" id="template-bar">
+  <span class="template-label">快捷:</span>
+  <button class="template-btn" data-prompt="请审查以下代码，找出潜在的 Bug、安全问题及性能瓶颈：">代码审查</button>
+  <button class="template-btn" data-prompt="请为以下代码添加详细注释：">写注释</button>
+  <button class="template-btn" data-prompt="请找出以下代码中的错误并给出修复方案：">找Bug</button>
+  <button class="template-btn" data-prompt="请优化以下代码的性能和可读性：">优化</button>
+</div>
 
 <!-- Chat area -->
 <main id="chat-container">
@@ -32,14 +70,13 @@
         <ul>
           <li>在网页上<b>选中文本</b> → 点击浮动按钮</li>
           <li><b>右键</b>选中文本 → 选择 AI 功能</li>
+          <li>快捷键：<b>Alt+E</b> 解释 | <b>Alt+T</b> 翻译 | <b>Alt+H</b> 高亮 | <b>Alt+S</b> 摘要 | <b>Alt+A</b> 打开助手</li>
           <li>直接在下方<b>输入框</b>粘贴内容提问</li>
         </ul>
         <p style="color:#a6adc8;">首次使用请点击"设置"按钮配置 API Key</p>
       </div>
     </div>
   </div>
-
-  <!-- Loading indicator -->
   <div id="loading-indicator" style="display:none;">
     <div class="msg assistant">
       <div class="msg-content">
@@ -51,8 +88,18 @@
 
 <!-- Input area -->
 <footer class="sp-input-area">
+  <div id="upload-preview" style="display:none;">
+    <div id="preview-content"></div>
+    <button id="btn-clear-upload" class="clear-upload" title="移除附件">&times;</button>
+  </div>
   <textarea id="user-input" rows="2" placeholder="输入问题，或选中网页文本后点击浮动按钮..."></textarea>
   <div class="input-actions">
+    <div class="upload-buttons">
+      <input type="file" id="file-upload" accept=".txt,.js,.ts,.py,.c,.cpp,.java,.rs,.go,.json,.xml,.html,.css,.md,.sql,.sh,.yaml,.yml,.toml,.ini,.cfg,.log" hidden>
+      <button id="btn-upload-file" title="上传文件">文件</button>
+      <input type="file" id="image-upload" accept="image/*" hidden>
+      <button id="btn-upload-image" title="上传图片">图片</button>
+    </div>
     <span id="char-count">0 / 8000</span>
     <button id="btn-send" title="发送 (Ctrl+Enter)">发送</button>
   </div>
@@ -71,6 +118,14 @@
     <label>Model
       <input type="text" id="model-input" value="deepseek-v4-pro[1m]">
     </label>
+    <hr style="border-color:#45475a; margin:14px 0;">
+    <h2>自定义 Prompt 模板</h2>
+    <div id="templates-list"></div>
+    <div style="display:flex; gap:6px; margin-top:8px;">
+      <input type="text" id="template-name-input" placeholder="模板名称" style="flex:1;">
+      <input type="text" id="template-prompt-input" placeholder="Prompt 内容" style="flex:2;">
+    </div>
+    <button id="btn-add-template" style="margin-top:8px; width:100%; background:#45475a; color:#cdd6f4; border:none; padding:6px; border-radius:6px; cursor:pointer;">添加模板</button>
     <div class="modal-actions">
       <button id="btn-save-settings">保存</button>
       <button id="btn-close-settings" class="secondary">取消</button>

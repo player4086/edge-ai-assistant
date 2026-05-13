@@ -696,17 +696,19 @@ async function callAI(userText, mode) {
 // ============================================
 function regenerate() {
   if (isStreaming) return;
-  // Only pop the LAST assistant message, not all of them
-  if (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
-    conversationHistory.pop();
-  }
-  const lastUser = conversationHistory[conversationHistory.length - 1];
-  if (!lastUser || lastUser.role !== 'user') return;
-  // Remove only the LAST displayed AI message
+  // Always operate on the LAST assistant message — the button only exists on the latest reply
+  const historyLen = conversationHistory.length;
+  if (!historyLen || conversationHistory[historyLen - 1].role !== 'assistant') return;
+  // Ensure the last user message is right before the last assistant
+  if (historyLen < 2 || conversationHistory[historyLen - 2].role !== 'user') return;
+  const lastUser = conversationHistory[historyLen - 2];
+  // Remove last assistant from history
+  conversationHistory.pop();
+  // Remove last AI bubble from DOM
   const msgs = chatMessages.querySelectorAll('.msg.assistant:not(#loading-indicator .msg)');
   const lastMsg = msgs[msgs.length - 1];
   if (lastMsg) lastMsg.remove();
-  // Re-send using the exact last user content
+  // Re-send
   const text = typeof lastUser.content === 'string' ? lastUser.content : '[请重新回答]';
   callAI(text, getMode());
 }

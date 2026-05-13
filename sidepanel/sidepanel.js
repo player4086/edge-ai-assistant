@@ -281,12 +281,20 @@ function appendMessage(role, content, isPartial) {
   div.className = `msg ${role}` + (isPartial ? ' streaming' : '');
   div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
   if (role === 'assistant' && !isPartial) {
-    const btn = document.createElement('button');
-    btn.className = 'tts-btn';
-    btn.title = '朗读';
-    btn.textContent = '🔊';
-    btn.addEventListener('click', () => toggleTTS(btn, content));
-    div.querySelector('.msg-content').appendChild(btn);
+    // TTS button
+    const ttsBtn = document.createElement('button');
+    ttsBtn.className = 'tts-btn tts-btn-right';
+    ttsBtn.title = '朗读';
+    ttsBtn.textContent = '🔊';
+    ttsBtn.addEventListener('click', () => toggleTTS(ttsBtn, content));
+    div.querySelector('.msg-content').appendChild(ttsBtn);
+    // Regenerate button
+    const regenBtn = document.createElement('button');
+    regenBtn.className = 'tts-btn regen-btn';
+    regenBtn.title = '重新回复';
+    regenBtn.textContent = '↻';
+    regenBtn.addEventListener('click', () => regenerate());
+    div.querySelector('.msg-content').appendChild(regenBtn);
   }
   const welcome = chatMessages.querySelector('.msg.welcome');
   if (welcome) welcome.remove();
@@ -581,6 +589,26 @@ async function callAI(userText, mode) {
     isStreaming = false;
     btnSend.disabled = false;
   }
+}
+
+// ============================================
+// Regenerate
+// ============================================
+function regenerate() {
+  if (isStreaming) return;
+  // Pop last assistant reply from history
+  while (conversationHistory.length && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
+    conversationHistory.pop();
+  }
+  const lastUser = conversationHistory[conversationHistory.length - 1];
+  if (!lastUser || lastUser.role !== 'user') return;
+  // Remove displayed AI message(s)
+  const msgs = chatMessages.querySelectorAll('.msg.assistant:not(#loading-indicator .msg)');
+  const lastMsg = msgs[msgs.length - 1];
+  if (lastMsg) lastMsg.remove();
+  // Re-send
+  const text = typeof lastUser.content === 'string' ? lastUser.content : '[重新生成上次回复]';
+  callAI(text, getMode());
 }
 
 // ============================================

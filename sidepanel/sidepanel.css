@@ -469,6 +469,15 @@ body {
 .tts-btn:hover { color: var(--accent); }
 .tts-btn.playing { color: var(--accent); opacity: 1; }
 
+.tts-btn-right { right: 4px; }
+.regen-btn {
+  right: 32px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.regen-btn:hover { color: var(--green); }
+
 /* ============================================
    Typing dots
    ============================================ */

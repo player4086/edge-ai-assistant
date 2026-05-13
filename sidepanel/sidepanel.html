@@ -173,11 +173,15 @@
     <hr style="border-color:#45475a; margin:14px 0;">
     <h2>自定义 Prompt 模板</h2>
     <div id="templates-list"></div>
-    <div style="display:flex; gap:6px; margin-top:8px;">
-      <input type="text" id="template-name-input" placeholder="模板名称" style="flex:1;">
-      <input type="text" id="template-prompt-input" placeholder="Prompt 内容" style="flex:2;">
+    <div class="template-add">
+      <label>名称
+        <input type="text" id="template-name-input" placeholder="如：写测试用例">
+      </label>
+      <label>Prompt 指令
+        <input type="text" id="template-prompt-input" placeholder="如：请为以下代码编写完整的单元测试…">
+      </label>
+      <button id="btn-add-template">添加模板</button>
     </div>
-    <button id="btn-add-template" style="margin-top:8px; width:100%; background:#45475a; color:#cdd6f4; border:none; padding:6px; border-radius:6px; cursor:pointer;">添加模板</button>
     <div class="modal-actions">
       <button id="btn-save-settings">保存</button>
       <button id="btn-close-settings" class="secondary">取消</button>

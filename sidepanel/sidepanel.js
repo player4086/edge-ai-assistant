@@ -130,8 +130,10 @@ function loadTemplates() {
     const temps = s.templates;
     templatesList.innerHTML = temps.map((t, i) =>
       `<div class="template-item">
-        <span class="temp-name">${escHtml(t.name)}</span>
-        <span class="temp-prompt">${escHtml(t.prompt)}</span>
+        <div class="temp-info">
+          <div class="temp-name">${escHtml(t.name)}</div>
+          <div class="temp-prompt">${escHtml(t.prompt)}</div>
+        </div>
         <span class="temp-del" data-idx="${i}">&times;</span>
       </div>`
     ).join('');

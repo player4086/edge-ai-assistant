@@ -792,26 +792,102 @@ body {
 #templates-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 120px;
+  gap: 6px;
+  max-height: 140px;
   overflow-y: auto;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .template-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 8px;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
   background: var(--bg3);
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 12px;
 }
 
-.template-item .temp-name { color: var(--accent); font-weight: 600; min-width: 50px; }
-.template-item .temp-prompt { color: var(--text2); flex: 1; margin: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.template-item .temp-del { color: var(--red); cursor: pointer; font-size: 16px; line-height: 1; transition: opacity 0.15s; }
+.template-item .temp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-item .temp-name {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.template-item .temp-prompt {
+  color: var(--text2);
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.template-item .temp-del {
+  color: var(--red);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 0 2px;
+  transition: opacity 0.15s;
+}
+
 .template-item .temp-del:hover { opacity: 0.7; }
+
+/* Template add form */
+.template-add {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.template-add label {
+  display: block;
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+
+.template-add label input {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.template-add label input:focus { border-color: var(--accent); }
+
+#btn-add-template {
+  width: 100%;
+  padding: 7px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+#btn-add-template:hover {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--accent);
+}
 
 .modal-actions {
   display: flex;

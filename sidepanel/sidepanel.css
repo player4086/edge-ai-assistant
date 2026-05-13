@@ -470,31 +470,27 @@ body {
 /* Message action buttons (above bubble) */
 .msg-actions {
   display: flex;
-  gap: 4px;
-  margin-bottom: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+  gap: 2px;
+  margin-bottom: 5px;
 }
 
-.msg:hover .msg-actions { opacity: 1; }
-
 .action-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text3);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 4px;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.action-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border); }
-.action-copy:hover { color: var(--yellow); }
-.action-regen:hover { color: var(--green); }
-.action-tts:hover { color: var(--accent); }
-.action-tts.playing { color: var(--accent); font-weight: 700; }
+.action-btn:hover { background: var(--border); color: var(--text); }
+.action-copy:hover { color: var(--yellow); border-color: var(--yellow); }
+.action-regen:hover { color: var(--green); border-color: var(--green); }
+.action-tts:hover { color: var(--accent); border-color: var(--accent); }
+.action-tts.playing { color: var(--accent); border-color: var(--accent); font-weight: 700; }
 
 /* ============================================
    Typing dots

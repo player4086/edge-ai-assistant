@@ -331,34 +331,38 @@ function appendMessage(role, content, isPartial) {
   }
   const div = document.createElement('div');
   div.className = `msg ${role}` + (isPartial ? ' streaming' : '');
-  div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
   if (role === 'assistant' && !isPartial) {
-    // Action buttons above the bubble
-    const actions = document.createElement('div');
-    actions.className = 'msg-actions';
-    actions.innerHTML = `
-      <button class="action-btn action-copy" title="复制回复内容">复制</button>
-      <button class="action-btn action-regen" title="用当前模式重新生成回复">重新回复</button>
-      <button class="action-btn action-tts" title="朗读回复">朗读</button>
-    `;
-    div.insertBefore(actions, div.firstChild);
-    // Bind handlers
-    actions.querySelector('.action-copy').addEventListener('click', () => {
-      const plain = content.replace(/```[\s\S]*?```/g, (m) => m).replace(/<[^>]*>/g, '');
-      navigator.clipboard.writeText(content).then(() => {
-        const btn = actions.querySelector('.action-copy');
-        btn.textContent = '已复制';
-        setTimeout(() => { btn.textContent = '复制'; }, 1500);
-      }).catch(() => {});
-    });
-    actions.querySelector('.action-regen').addEventListener('click', () => regenerate());
-    actions.querySelector('.action-tts').addEventListener('click', function() {
-      toggleTTS(this, content);
-    });
+    div.innerHTML = `
+      <div class="msg-actions">
+        <button class="action-btn action-copy" data-action="copy" title="复制回复">复制</button>
+        <button class="action-btn action-regen" data-action="regen" title="重新回复">重新回复</button>
+        <button class="action-btn action-tts" data-action="tts" title="朗读">朗读</button>
+      </div>
+      <div class="msg-content">${renderMarkdown(content)}</div>`;
+  } else {
+    div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
   }
   const welcome = chatMessages.querySelector('.msg.welcome');
   if (welcome) welcome.remove();
   chatMessages.appendChild(div);
+  // Bind action buttons via event delegation on the container
+  if (role === 'assistant' && !isPartial) {
+    div.querySelector('.msg-actions').addEventListener('click', (e) => {
+      const btn = e.target.closest('.action-btn');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'copy') {
+        navigator.clipboard.writeText(content).then(() => {
+          btn.textContent = '已复制';
+          setTimeout(() => { btn.textContent = '复制'; }, 1500);
+        }).catch(() => {});
+      } else if (action === 'regen') {
+        regenerate();
+      } else if (action === 'tts') {
+        toggleTTS(btn, content);
+      }
+    });
+  }
   chatContainer().scrollTop = chatContainer().scrollHeight;
 }
 

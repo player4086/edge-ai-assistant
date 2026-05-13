@@ -471,25 +471,26 @@ body {
 .msg-actions {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
+  padding-top: 6px;
+  margin-top: 2px;
 }
 
 .action-btn {
-  background: transparent;
+  background: var(--bg3);
   border: 1px solid var(--border);
-  color: var(--text3);
+  color: var(--text2);
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 12px;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.action-btn:hover { background: var(--bg3); }
+.action-btn:hover { background: var(--border); color: var(--text); }
 .action-regen:hover { color: var(--green); border-color: var(--green); }
 .action-tts:hover { color: var(--accent); border-color: var(--accent); }
-.action-tts.playing { color: var(--accent); border-color: var(--accent); background: var(--bg3); }
+.action-tts.playing { color: var(--accent); border-color: var(--accent); background: var(--border); }
 
 /* ============================================
    Typing dots

@@ -212,9 +212,8 @@ document.getElementById('btn-readpage').addEventListener('click', () => {
 // Templates (quick bar)
 // ============================================
 templateBar.addEventListener('click', (e) => {
-  if (e.target.classList.contains('template-btn')) {
-    const prompt = e.target.dataset.prompt;
-    userInput.value = prompt + '\n' + userInput.value;
+  if (e.target.classList.contains('template-btn') && e.target.dataset.prompt) {
+    userInput.value = e.target.dataset.prompt + '\n' + userInput.value;
     userInput.focus();
     updateCharCount();
   }
@@ -719,8 +718,10 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 });
 
 // Messages from background/content
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  // Only process messages relayed by background (not direct from content scripts)
   if (msg.type === 'QUERY_AI' && msg.text) {
+    if (sender.tab) return false; // ignore direct from content, background will relay
     if (msg.mode && ['explain','translate','summarize','readpage'].includes(msg.mode)) setMode(msg.mode);
     if (msg.mode === 'translate') langSelect.style.display = 'block';
     callAI(msg.text, getMode());

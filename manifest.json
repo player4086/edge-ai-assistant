@@ -36,10 +36,6 @@
       "suggested_key": { "default": "Alt+T" },
       "description": "AI 翻译选中文本"
     },
-    "highlight": {
-      "suggested_key": { "default": "Alt+H" },
-      "description": "高亮选中文本"
-    },
     "summarize": {
       "suggested_key": { "default": "Alt+S" },
       "description": "AI 摘要当前页面"

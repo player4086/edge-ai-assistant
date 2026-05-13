@@ -34,10 +34,6 @@ chrome.commands.onCommand.addListener((command, tab) => {
     summarizePage(tab);
     return;
   }
-  if (command === 'highlight') {
-    chrome.tabs.sendMessage(tab.id, { type: 'HIGHLIGHT_SELECTION' });
-    return;
-  }
   const modeMap = { explain: 'explain', translate: 'translate' };
   if (modeMap[command]) {
     chrome.tabs.sendMessage(tab.id, { type: 'GET_SELECTED_TEXT' }, (resp) => {

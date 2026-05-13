@@ -186,7 +186,7 @@ initSelect(langSelect, () => {});
 document.getElementById('btn-readpage').addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0];
-    if (!tab || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
+    if (!tab || !tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
       appendMessage('assistant', '**无法读取系统页面。**\n\n请在普通网页上使用此功能。');
       return;
     }

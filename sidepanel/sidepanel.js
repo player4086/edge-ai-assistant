@@ -281,20 +281,23 @@ function appendMessage(role, content, isPartial) {
   div.className = `msg ${role}` + (isPartial ? ' streaming' : '');
   div.innerHTML = `<div class="msg-content">${renderMarkdown(content)}</div>`;
   if (role === 'assistant' && !isPartial) {
-    // TTS button
-    const ttsBtn = document.createElement('button');
-    ttsBtn.className = 'tts-btn tts-btn-right';
-    ttsBtn.title = '朗读';
-    ttsBtn.textContent = '🔊';
-    ttsBtn.addEventListener('click', () => toggleTTS(ttsBtn, content));
-    div.querySelector('.msg-content').appendChild(ttsBtn);
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
     // Regenerate button
     const regenBtn = document.createElement('button');
-    regenBtn.className = 'tts-btn regen-btn';
+    regenBtn.className = 'action-btn action-regen';
     regenBtn.title = '重新回复';
-    regenBtn.textContent = '↻';
+    regenBtn.textContent = '↻ 重新回复';
     regenBtn.addEventListener('click', () => regenerate());
-    div.querySelector('.msg-content').appendChild(regenBtn);
+    actions.appendChild(regenBtn);
+    // TTS button
+    const ttsBtn = document.createElement('button');
+    ttsBtn.className = 'action-btn action-tts';
+    ttsBtn.title = '朗读';
+    ttsBtn.textContent = '🔊 朗读';
+    ttsBtn.addEventListener('click', () => toggleTTS(ttsBtn, content));
+    actions.appendChild(ttsBtn);
+    div.appendChild(actions);
   }
   const welcome = chatMessages.querySelector('.msg.welcome');
   if (welcome) welcome.remove();
@@ -310,17 +313,18 @@ function chatContainer() { return document.getElementById('chat-container'); }
 function toggleTTS(btn, text) {
   if (currentTTS) {
     window.speechSynthesis.cancel();
-    if (currentTTS.btn === btn) { currentTTS = null; btn.classList.remove('playing'); return; }
+    if (currentTTS.btn === btn) { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; return; }
   }
   const plain = text.replace(/```[\s\S]*?```/g, '').replace(/[#*`>\-\[\]()]/g, '').trim();
   if (!plain) return;
   const utterance = new SpeechSynthesisUtterance(plain);
   utterance.lang = 'zh-CN';
   utterance.rate = 1.0;
-  utterance.onend = () => { currentTTS = null; btn.classList.remove('playing'); };
-  utterance.onerror = () => { currentTTS = null; btn.classList.remove('playing'); };
+  utterance.onend = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; };
+  utterance.onerror = () => { currentTTS = null; btn.classList.remove('playing'); btn.textContent = '🔊 朗读'; };
   currentTTS = { btn, utterance };
   btn.classList.add('playing');
+  btn.textContent = '⏹ 停止';
   window.speechSynthesis.speak(utterance);
 }
 

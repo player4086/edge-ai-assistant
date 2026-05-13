@@ -449,34 +449,33 @@ body {
 
 .msg-content pre:hover .copy-btn { opacity: 1; }
 
-/* TTS button */
-.tts-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text3);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+/* Message action buttons (below bubble) */
+.msg-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
   opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
+  transition: opacity 0.2s;
 }
 
-.msg.assistant .msg-content:hover .tts-btn { opacity: 1; }
-.tts-btn:hover { color: var(--accent); }
-.tts-btn.playing { color: var(--accent); opacity: 1; }
+.msg.assistant:hover .msg-actions { opacity: 1; }
 
-.tts-btn-right { right: 4px; }
-.regen-btn {
-  right: 32px;
-  font-size: 16px;
-  font-weight: 700;
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 12px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.regen-btn:hover { color: var(--green); }
+.action-btn:hover { background: var(--bg3); }
+.action-tts:hover { color: var(--accent); border-color: var(--accent); }
+.action-regen:hover { color: var(--green); border-color: var(--green); }
+.action-tts.playing { color: var(--accent); border-color: var(--accent); background: var(--bg3); opacity: 1; }
 
 /* ============================================
    Typing dots

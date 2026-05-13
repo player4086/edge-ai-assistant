@@ -40,9 +40,33 @@ document.getElementById('btn-help').addEventListener('click', () => {
 function applyTheme(theme) {
   document.body.className = theme;
 }
+
+function showToast(msg, duration) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration || 2000);
+}
+
 chrome.storage.local.get({ theme: 'dark' }, (s) => applyTheme(s.theme));
+
 document.getElementById('btn-theme').addEventListener('click', () => {
   const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+  const hasBg = document.body.classList.contains('has-bg');
+  const currentOpacity = hasBg ? Math.round(parseFloat(getComputedStyle(document.body).getPropertyValue('--bg-opacity')) * 100) : null;
+
+  if (hasBg) {
+    const msg = currentOpacity
+      ? `切换到"${next === 'dark' ? '暗色' : '亮色'}"主题，壁纸透明度将变为 ${currentOpacity}%，点击重置按钮可恢复纯色背景。`
+      : `切换到"${next === 'dark' ? '暗色' : '亮色'}"主题，壁纸将继续保留。`;
+    showToast(msg, 3500);
+  }
+
   applyTheme(next);
   chrome.storage.local.set({ theme: next });
 });
